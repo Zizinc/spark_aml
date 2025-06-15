@@ -1,0 +1,688 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>循环闭环交易资金链路网络</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+        .header p {
+            color: #666;
+            margin: 5px 0;
+        }
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .legend h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .legend-item {
+            display: inline-block;
+            margin: 5px 15px 5px 0;
+            align-items: center;
+        }
+        .legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+            border: 2px solid #000;
+        }
+        .legend-line {
+            display: inline-block;
+            width: 30px;
+            height: 4px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        #network {
+            width: 100%;
+            height: 700px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            text-align: center;
+        }
+        .controls button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .controls button:hover {
+            background: #45a049;
+        }
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .stats h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>循环闭环交易资金链路网络</h1>
+        <p>基于GraphFrame检测的洗钱网络可视化</p>
+        <p>红色节点：洗钱者 | 橙色节点：协助者 | 蓝色节点：普通账户</p>
+    </div>
+    
+    <div class="legend">
+        <h3>图例说明</h3>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #ff4444;"></span>
+            <span>洗钱者</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #ff8844;"></span>
+            <span>协助者</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #4488ff;"></span>
+            <span>普通账户</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-line" style="background-color: #ff0000;"></span>
+            <span>可疑交易</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-line" style="background-color: #888888;"></span>
+            <span>普通交易</span>
+        </div>
+    </div>
+    
+    <div id="network"></div>
+    
+    <div class="controls">
+        <button onclick="fitNetwork()">适应窗口</button>
+        <button onclick="resetView()">重置视图</button>
+        <button onclick="togglePhysics()">切换物理引擎</button>
+        <button onclick="exportImage()">导出图片</button>
+    </div>
+    
+    <div class="stats">
+        <h3>网络统计</h3>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number" id="nodeCount">10</div>
+                <div class="stat-label">账户节点</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="edgeCount">10</div>
+                <div class="stat-label">交易边</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="suspiciousNodes">10</div>
+                <div class="stat-label">可疑账户</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="suspiciousEdges">10</div>
+                <div class="stat-label">可疑交易</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 网络数据
+        const nodes = new vis.DataSet([
+        {
+                "id": "10000070",
+                "label": "周成\n(10000070)",
+                "title": "账户: 10000070<br/>所有者: 周成<br/>国家: 德国<br/>角色: 洗钱者",
+                "color": "#ff4444",
+                "size": 30,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000071",
+                "label": "泰麒麟科技有限公司\n(10000071)",
+                "title": "账户: 10000071<br/>所有者: 泰麒麟科技有限公司<br/>国家: 英国<br/>角色: 协助者",
+                "color": "#ff8844",
+                "size": 20,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000072",
+                "label": "段桂英\n(10000072)",
+                "title": "账户: 10000072<br/>所有者: 段桂英<br/>国家: 英国<br/>角色: 协助者",
+                "color": "#ff8844",
+                "size": 20,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000073",
+                "label": "任杰\n(10000073)",
+                "title": "账户: 10000073<br/>所有者: 任杰<br/>国家: 美国<br/>角色: 协助者",
+                "color": "#ff8844",
+                "size": 20,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000074",
+                "label": "杨桂花\n(10000074)",
+                "title": "账户: 10000074<br/>所有者: 杨桂花<br/>国家: 法国<br/>角色: 洗钱者",
+                "color": "#ff4444",
+                "size": 30,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000075",
+                "label": "郁阳\n(10000075)",
+                "title": "账户: 10000075<br/>所有者: 郁阳<br/>国家: 英国<br/>角色: 协助者",
+                "color": "#ff8844",
+                "size": 20,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000076",
+                "label": "雨林木风计算机科技有限公司\n(10000076)",
+                "title": "账户: 10000076<br/>所有者: 雨林木风计算机科技有限公司<br/>国家: 法国<br/>角色: 协助者",
+                "color": "#ff8844",
+                "size": 20,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000077",
+                "label": "兰金电子传媒有限公司\n(10000077)",
+                "title": "账户: 10000077<br/>所有者: 兰金电子传媒有限公司<br/>国家: 中国<br/>角色: 洗钱者",
+                "color": "#ff4444",
+                "size": 30,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000078",
+                "label": "周萍\n(10000078)",
+                "title": "账户: 10000078<br/>所有者: 周萍<br/>国家: 法国<br/>角色: 协助者",
+                "color": "#ff8844",
+                "size": 20,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        },
+        {
+                "id": "10000079",
+                "label": "凌颖信息传媒有限公司\n(10000079)",
+                "title": "账户: 10000079<br/>所有者: 凌颖信息传媒有限公司<br/>国家: 德国<br/>角色: 协助者",
+                "color": "#ff8844",
+                "size": 20,
+                "font": {
+                        "size": 12,
+                        "color": "#000000"
+                },
+                "borderWidth": 2,
+                "borderColor": "#000000"
+        }
+]);
+        const edges = new vis.DataSet([
+        {
+                "id": 0,
+                "from": "10000070",
+                "to": "10000071",
+                "label": "10.0万 CNY",
+                "title": "交易ID: TXN000701<br/>金额: 99,744.53 CNY<br/>日期: 2023-01-12 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 1,
+                "from": "10000071",
+                "to": "10000072",
+                "label": "10.0万 CNY",
+                "title": "交易ID: TXN000702<br/>金额: 99,744.53 CNY<br/>日期: 2023-01-12 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 2,
+                "from": "10000072",
+                "to": "10000073",
+                "label": "10.0万 CNY",
+                "title": "交易ID: TXN000703<br/>金额: 99,744.53 CNY<br/>日期: 2023-01-12 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 3,
+                "from": "10000073",
+                "to": "10000070",
+                "label": "10.0万 CNY",
+                "title": "交易ID: TXN000704<br/>金额: 99,744.53 CNY<br/>日期: 2023-01-12 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 4,
+                "from": "10000074",
+                "to": "10000075",
+                "label": "9.1万 CNY",
+                "title": "交易ID: TXN000705<br/>金额: 91,224.65 CNY<br/>日期: 2023-04-12 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 5,
+                "from": "10000075",
+                "to": "10000076",
+                "label": "9.1万 CNY",
+                "title": "交易ID: TXN000706<br/>金额: 91,224.65 CNY<br/>日期: 2023-04-12 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 6,
+                "from": "10000076",
+                "to": "10000074",
+                "label": "9.1万 CNY",
+                "title": "交易ID: TXN000707<br/>金额: 91,224.65 CNY<br/>日期: 2023-04-12 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 7,
+                "from": "10000077",
+                "to": "10000078",
+                "label": "8.3万 CNY",
+                "title": "交易ID: TXN000708<br/>金额: 82,836.88 CNY<br/>日期: 2023-08-16 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 8,
+                "from": "10000078",
+                "to": "10000079",
+                "label": "8.3万 CNY",
+                "title": "交易ID: TXN000709<br/>金额: 82,836.88 CNY<br/>日期: 2023-08-16 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        },
+        {
+                "id": 9,
+                "from": "10000079",
+                "to": "10000077",
+                "label": "8.3万 CNY",
+                "title": "交易ID: TXN000710<br/>金额: 82,836.88 CNY<br/>日期: 2023-08-16 00:00:00<br/>类型: 可疑交易",
+                "color": "#ff0000",
+                "width": 4,
+                "arrows": {
+                        "to": {
+                                "enabled": true,
+                                "scaleFactor": 1.2
+                        }
+                },
+                "font": {
+                        "size": 10,
+                        "color": "#000000",
+                        "strokeWidth": 2,
+                        "strokeColor": "#ffffff"
+                },
+                "dashes": false
+        }
+]);
+        
+        // 网络配置
+        const options = {
+            physics: {
+            "enabled": true,
+            "solver": "forceAtlas2Based",
+            "forceAtlas2Based": {
+                        "gravitationalConstant": -50,
+                        "centralGravity": 0.01,
+                        "springLength": 200,
+                        "springConstant": 0.08,
+                        "damping": 0.4,
+                        "avoidOverlap": 1
+            },
+            "stabilization": {
+                        "iterations": 150
+            }
+},
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                hideEdgesOnDrag: false,
+                hideNodesOnDrag: false
+            },
+            layout: {
+                improvedLayout: true,
+                clusterThreshold: 150
+            },
+            edges: {
+                smooth: {
+                    enabled: true,
+                    type: 'dynamic',
+                    roundness: 0.5
+                },
+                labelHighlightBold: true
+            },
+            nodes: {
+                shape: 'dot',
+                labelHighlightBold: true,
+                chosen: {
+                    node: function(values, id, selected, hovering) {
+                        values.borderWidth = 4;
+                        values.borderColor = '#000000';
+                    }
+                }
+            },
+            groups: {},
+            configure: {
+                enabled: false
+            }
+        };
+        
+        // 创建网络
+        const container = document.getElementById('network');
+        const data = { nodes: nodes, edges: edges };
+        const network = new vis.Network(container, data, options);
+        
+        // 网络事件
+        network.on('click', function(params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                const node = nodes.get(nodeId);
+                console.log('点击节点:', node);
+            }
+            if (params.edges.length > 0) {
+                const edgeId = params.edges[0];
+                const edge = edges.get(edgeId);
+                console.log('点击边:', edge);
+            }
+        });
+        
+        network.on('hoverNode', function(params) {
+            const nodeId = params.node;
+            const connectedEdges = network.getConnectedEdges(nodeId);
+            const connectedNodes = network.getConnectedNodes(nodeId);
+            
+            // 高亮连接的节点和边
+            const updateArray = [];
+            edges.forEach(function(edge) {
+                if (connectedEdges.includes(edge.id)) {
+                    updateArray.push({id: edge.id, color: {color: '#ff0000', highlight: '#ff0000'}});
+                }
+            });
+            edges.update(updateArray);
+        });
+        
+        network.on('blurNode', function(params) {
+            // 恢复原始颜色
+            edges.forEach(function(edge) {
+                const originalColor = edge.color;
+                edges.update({id: edge.id, color: originalColor});
+            });
+        });
+        
+        // 控制函数
+        let physicsEnabled = true;
+        
+        function fitNetwork() {
+            network.fit({
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+        }
+        
+        function resetView() {
+            network.moveTo({
+                position: {x: 0, y: 0},
+                scale: 1,
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+        }
+        
+        function togglePhysics() {
+            physicsEnabled = !physicsEnabled;
+            network.setOptions({physics: {enabled: physicsEnabled}});
+            event.target.textContent = physicsEnabled ? '关闭物理引擎' : '开启物理引擎';
+        }
+        
+        function exportImage() {
+            const canvas = network.getCanvas();
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = '循环闭环交易_network.png';
+            link.href = dataURL;
+            link.click();
+        }
+        
+        // 初始化
+        network.once('stabilizationIterationsDone', function() {
+            console.log('网络布局稳定完成');
+            fitNetwork();
+        });
+        
+        // 窗口大小改变时重新适应
+        window.addEventListener('resize', function() {
+            network.redraw();
+        });
+    </script>
+</body>
+</html>

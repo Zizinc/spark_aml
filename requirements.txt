@@ -1,0 +1,21 @@
+# AML反洗钱检测系统依赖包
+# 基于Python 3.11
+
+# 核心数据处理
+pyspark>=3.2.4
+pandas>=2.0.0
+numpy>=1.24.0
+
+# 图计算和网络分析
+graphframes>=0.6
+networkx>=3.0
+
+# 数据可视化
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# 开发和测试工具
+jupyter>=1.0.0
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0 

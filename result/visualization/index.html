@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AML洗钱网络可视化</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 3em;
+            margin: 0 0 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .card h3 {
+            color: #333;
+            font-size: 1.5em;
+            margin: 0 0 15px 0;
+        }
+        .card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .card a {
+            display: inline-block;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .card a:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .stats {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+            color: white;
+            text-align: center;
+        }
+        .stats h3 {
+            margin: 0 0 20px 0;
+            font-size: 1.8em;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕸️ AML洗钱网络可视化</h1>
+            <p>基于GraphFrame技术的反洗钱模式检测与可视化系统</p>
+        </div>
+        
+        <div class="cards">
+
+            <div class="card">
+                <div class="icon">🔄</div>
+                <h3>循环闭环交易网络</h3>
+                <p>展示资金在多个账户间形成闭环流转的洗钱模式，通过GraphFrame检测三角形和四边形循环结构。</p>
+                <a href="循环闭环交易网络.html">查看网络 →</a>
+            </div>
+
+            <div class="card">
+                <div class="icon">⭐</div>
+                <h3>星型拆分入账网络</h3>
+                <p>展示多个账户向中心账户小额转账的洗钱模式，通过分散资金来源规避监管。</p>
+                <a href="星型拆分入账网络.html">查看网络 →</a>
+            </div>
+
+            <div class="card">
+                <div class="icon">🌍</div>
+                <h3>跨境多层转账网络</h3>
+                <p>展示资金通过多层中转最终流向高危国家的洗钱模式，利用复杂路径掩盖资金来源。</p>
+                <a href="跨境多层转账网络.html">查看网络 →</a>
+            </div>
+
+        </div>
+        
+        <div class="stats">
+            <h3>📊 检测统计</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">115</div>
+                    <div class="stat-label">总账户数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">745</div>
+                    <div class="stat-label">总交易数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">43</div>
+                    <div class="stat-label">可疑账户</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">45</div>
+                    <div class="stat-label">可疑交易</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
