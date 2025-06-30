@@ -1,0 +1,6 @@
+{
+  "files.exclude": {
+    "dify/": true,
+    "prompt/": true
+  }
+} 

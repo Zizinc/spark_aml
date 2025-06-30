@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "dify-AML-knowledge": {
+      "url": "http://localhost/e/2ecxwdk5l85r2s4v/mcp",
+      "headers": {
+        "Authorization": "Bearer 5Ccp9Eu2QfQikxQ"
+      }
+    }
+  }
+} 
