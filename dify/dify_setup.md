@@ -44,5 +44,6 @@ Replace with the your code below
 ```
 Make sure your MCP is enabled and has tools enabled
 ![](image/cursor_mcp.png)
+
 Now you can ask something like "循环闭环交易的定义" and see if Cursor can use MCP tool
 ![](image/cursor_tool_calling.png)
